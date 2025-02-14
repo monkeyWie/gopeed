@@ -262,6 +262,47 @@ jobs:
           upload_url: ${{ needs.get-release.outputs.upload_url }}
           asset_path: ui/flutter/dist/*/*
           overwrite: true
+  build-linux-arm64:
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux-arm64' }}
+    runs-on: ubuntu-22.04-arm
+    needs: [get-release]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: master
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Install dependencies
+        run: |
+          sudo apt update -y
+          # flutter build dependencies
+          sudo apt install -y ninja-build libgtk-3-dev libayatana-appindicator3-1 libayatana-appindicator3-dev
+          # appimage build dependencies
+          sudo apt install -y libfuse2 locate
+          wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage"
+          chmod +x appimagetool
+          sudo mv appimagetool /usr/local/bin/
+      - name: Build
+        env:
+          VERSION: ${{ needs.get-release.outputs.version }}
+        run: |
+          go build -tags nosqlite -ldflags="-w -s -X github.com/GopeedLab/gopeed/pkg/base.Version=$VERSION" -buildmode=c-shared -o ui/flutter/linux/bundle/lib/libgopeed.so github.com/GopeedLab/gopeed/bind/desktop
+          go build -ldflags="-w -s" -o ui/flutter/assets/host/host github.com/GopeedLab/gopeed/cmd/host
+          cd ui/flutter
+          dart pub global activate -sgit https://github.com/GopeedLab/flutter_distributor.git --git-path packages/flutter_distributor
+          flutter_distributor package --platform linux --targets appimage,deb
+          cd dist/*
+          mv gopeed-*-linux.AppImage Gopeed-v${VERSION}-linux-aarch64.AppImage
+          mv gopeed-*-linux.deb Gopeed-v${VERSION}-linux-arm64.deb
+      - name: Upload
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.get-release.outputs.upload_url }}
+          asset_path: ui/flutter/dist/*/*
+          overwrite: true
   build-snap:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'snap' }}
     runs-on: ubuntu-latest

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
@@ -152,5 +154,46 @@ class Util {
       timer?.cancel();
       timer = Timer(Duration(milliseconds: ms), fn);
     };
+  }
+
+  static String homePathJoin(String fileName) {
+    final execPath = Platform.resolvedExecutable;
+    final execDir = path.dirname(execPath);
+    return path.join(execDir, fileName);
+  }
+
+  static Future<void> installAsset(String assetPath, String targetPath,
+      {bool executable = false}) async {
+    Future<List<int>> getAssetData() async {
+      final asset = await rootBundle.load(assetPath);
+      return asset.buffer.asUint8List(asset.offsetInBytes, asset.lengthInBytes);
+    }
+
+    // Check if target file is not installed
+    if (!await File(targetPath).exists()) {
+      final assetData = await getAssetData();
+      final file = File(targetPath);
+      await file.writeAsBytes(assetData);
+      // Add execute permission when file first created
+      if (executable && !Platform.isWindows) {
+        await Process.run('chmod', ['+x', targetPath]);
+      }
+      return;
+    }
+
+    // Check if target file needs to be updated
+    final assetData = await getAssetData();
+    if (_md5(assetData) != await _md5File(File(targetPath))) {
+      await File(targetPath).writeAsBytes(assetData);
+      return;
+    }
+  }
+
+  static String _md5(List<int> data) {
+    return md5.convert(data).toString();
+  }
+
+  static Future<String> _md5File(File file) async {
+    return file.openRead().transform(md5).first.toString();
   }
 }

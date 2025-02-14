@@ -27,6 +27,7 @@ import '../../../../main.dart';
 import '../../../../util/locale_manager.dart';
 import '../../../../util/log_util.dart';
 import '../../../../util/package_info.dart';
+import '../../../../util/updater.dart';
 import '../../../../util/util.dart';
 import '../../../routes/app_pages.dart';
 import '../../create/dto/create_router_params.dart';
@@ -109,6 +110,9 @@ class AppController extends GetxController with WindowListener, TrayListener {
 
     _initLaunchAtStartup().onError((error, stackTrace) =>
         logger.w("initLaunchAtStartup error", error, stackTrace));
+
+    _initCheckUpdate().onError((error, stackTrace) =>
+        logger.w("initCheckUpdate error", error, stackTrace));
   }
 
   @override
@@ -522,6 +526,13 @@ class AppController extends GetxController with WindowListener, TrayListener {
         appPath: Platform.resolvedExecutable,
         args: ['--${Args.flagHidden}']);
     autoStartup.value = await launchAtStartup.isEnabled();
+  }
+
+  Future<void> _initCheckUpdate() async {
+    final versionInfo = await checkUpdate();
+    if (versionInfo != null) {
+      await showUpdateDialog(Get.context!, versionInfo);
+    }
   }
 
   Future<void> saveConfig() async {

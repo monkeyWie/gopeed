@@ -16,6 +16,7 @@ import 'util/locale_manager.dart';
 import 'util/log_util.dart';
 import 'util/package_info.dart';
 import 'util/scheme_register/scheme_register.dart';
+import 'util/updater.dart';
 import 'util/util.dart';
 
 class Args {
@@ -93,26 +94,34 @@ Future<void> init(Args args) async {
   }
 
   () async {
-    try {
-      registerUrlScheme("gopeed");
-      if (controller.downloaderConfig.value.extra.defaultBtClient) {
-        registerDefaultTorrentClient();
-      }
-    } catch (e) {
-      logger.e("register scheme fail", e);
-    }
-
-    try {
-      await installHost();
-    } catch (e) {
-      logger.e("browser extension host binary install fail", e);
-    }
-    for (final browser in Browser.values) {
+    if (Util.isDesktop()) {
       try {
-        await installManifest(browser);
+        registerUrlScheme("gopeed");
+        if (controller.downloaderConfig.value.extra.defaultBtClient) {
+          registerDefaultTorrentClient();
+        }
       } catch (e) {
-        logger.e(
-            "browser [${browser.name}] extension host integration fail", e);
+        logger.e("register scheme fail", e);
+      }
+
+      try {
+        await installHost();
+      } catch (e) {
+        logger.e("browser extension host binary install fail", e);
+      }
+      for (final browser in Browser.values) {
+        try {
+          await installManifest(browser);
+        } catch (e) {
+          logger.e(
+              "browser [${browser.name}] extension host integration fail", e);
+        }
+      }
+
+      try {
+        await installUpdater();
+      } catch (e) {
+        logger.e("updater install fail", e);
       }
     }
   }();

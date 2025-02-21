@@ -18,6 +18,7 @@ import '../../../../util/log_util.dart';
 import '../../../../util/message.dart';
 import '../../../../util/package_info.dart';
 import '../../../../util/scheme_register/scheme_register.dart';
+import '../../../../util/updater.dart';
 import '../../../../util/util.dart';
 import '../../../views/check_list_view.dart';
 import '../../../views/directory_selector.dart';
@@ -514,29 +515,7 @@ class SettingView extends GetView<SettingController> {
     }
 
     buildVersion() {
-      bool isNewVersion(String current, String latest) {
-        if (latest == "") {
-          return false;
-        }
-
-        final v1Parts = current.split('.');
-        final v2Parts = latest.split('.');
-
-        for (var i = 0; i < 3; i++) {
-          final v1Part = int.parse(v1Parts[i]);
-          final v2Part = int.parse(v2Parts[i]);
-
-          if (v1Part < v2Part) {
-            return true;
-          } else if (v1Part > v2Part) {
-            return false;
-          }
-        }
-        return false;
-      }
-
-      var hasNewVersion =
-          isNewVersion(packageInfo.version, controller.latestVersion.value);
+      var hasNewVersion = controller.latestVersion.value != null;
       return ListTile(
         title: hasNewVersion
             ? badges.Badge(
@@ -546,27 +525,7 @@ class SettingView extends GetView<SettingController> {
         subtitle: Text(packageInfo.version),
         onTap: () {
           if (hasNewVersion) {
-            showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                      content: Text('newVersionTitle'.trParams(
-                          {'version': controller.latestVersion.value})),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Get.back();
-                          },
-                          child: Text('newVersionLater'.tr),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            launchUrl(Uri.parse('https://gopeed.com'),
-                                mode: LaunchMode.externalApplication);
-                          },
-                          child: Text('newVersionUpdate'.tr),
-                        ),
-                      ],
-                    ));
+            showUpdateDialog(context, controller.latestVersion.value!);
           }
         },
       );

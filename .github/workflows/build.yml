@@ -52,7 +52,7 @@ jobs:
           mv ChineseSimplified.isl "C:\Program Files (x86)\Inno Setup 6\Languages\"
 
           go build -tags nosqlite -ldflags="-w -s -X github.com/GopeedLab/gopeed/pkg/base.Version=$env:VERSION" -buildmode=c-shared -o ui/flutter/windows/libgopeed.dll github.com/GopeedLab/gopeed/bind/desktop
-          go build -ldflags="-w -s" -o ui/flutter/assets/host/host.exe github.com/GopeedLab/gopeed/cmd/host
+          go build -ldflags="-w -s" -o ui/flutter/assets/exec/host.exe github.com/GopeedLab/gopeed/cmd/host
           cd ui/flutter
           $TAG = "v$env:VERSION"
           flutter build windows
@@ -200,7 +200,7 @@ jobs:
           lipo -create -output libgopeed.dylib amd64-lib arm64-lib
           lipo -create -output host amd64-host arm64-host
           rm -rf amd64-lib arm64-lib amd64-host arm64-host
-          mv host ../../assets/host/host
+          mv host ../../assets/exec/host
 
           cd $PROJECT_DIR/ui/flutter
           flutter build macos
@@ -249,7 +249,7 @@ jobs:
           VERSION: ${{ needs.get-release.outputs.version }}
         run: |
           go build -tags nosqlite -ldflags="-w -s -X github.com/GopeedLab/gopeed/pkg/base.Version=$VERSION" -buildmode=c-shared -o ui/flutter/linux/bundle/lib/libgopeed.so github.com/GopeedLab/gopeed/bind/desktop
-          go build -ldflags="-w -s" -o ui/flutter/assets/host/host github.com/GopeedLab/gopeed/cmd/host
+          go build -ldflags="-w -s" -o ui/flutter/assets/exec/host github.com/GopeedLab/gopeed/cmd/host
           cd ui/flutter
           dart pub global activate -sgit https://github.com/GopeedLab/flutter_distributor.git --git-path packages/flutter_distributor
           flutter_distributor package --platform linux --targets appimage,deb
@@ -321,7 +321,7 @@ jobs:
           VERSION: ${{ needs.get-release.outputs.version }}
         run: |
           go build -tags nosqlite -ldflags="-w -s -X github.com/GopeedLab/gopeed/pkg/base.Version=$VERSION" -buildmode=c-shared -o ui/flutter/linux/bundle/lib/libgopeed.so github.com/GopeedLab/gopeed/bind/desktop
-          go build -ldflags="-w -s" -o ui/flutter/assets/host/host github.com/GopeedLab/gopeed/cmd/host
+          go build -ldflags="-w -s" -o ui/flutter/assets/exec/host github.com/GopeedLab/gopeed/cmd/host
           cd ui/flutter
 
           sudo snap install snapcraft --classic

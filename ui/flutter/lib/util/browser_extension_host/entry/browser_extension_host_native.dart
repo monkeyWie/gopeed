@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:win32_registry/win32_registry.dart';
 
+import '../../util.dart';
 import '../../win32.dart';
 import '../browser_extension_host.dart';
 
@@ -26,32 +26,9 @@ const _firefoxNativeHostsKey = r'Software\Mozilla\NativeMessagingHosts';
 
 /// Install host binary for browser extension
 Future<void> doInstallHost() async {
-  final hostPath = _joinExePath(_hostExecName);
-
-  Future<List<int>> getHostAssetData() async {
-    final hostAsset = await rootBundle.load('assets/host/$_hostExecName');
-    return hostAsset.buffer
-        .asUint8List(hostAsset.offsetInBytes, hostAsset.lengthInBytes);
-  }
-
-  // Check if host binary is not installed
-  if (!await File(hostPath).exists()) {
-    final hostData = await getHostAssetData();
-    final file = File(hostPath);
-    await file.writeAsBytes(hostData);
-    // Add execute permission
-    if (!Platform.isWindows) {
-      await Process.run('chmod', ['+x', hostPath]);
-    }
-    return;
-  }
-  // Check if host binary is outdated
-  final hostAssetData = await getHostAssetData();
-  final hostFileData = await File(hostPath).readAsBytes();
-  if (hostAssetData.length != hostFileData.length) {
-    await File(hostPath).writeAsBytes(hostAssetData);
-    return;
-  }
+  final hostPath = Util.homePathJoin(_hostExecName);
+  await Util.installAsset('assets/exec/$_hostExecName', hostPath,
+      executable: true);
 }
 
 /// Check if specified browser is installed
@@ -236,7 +213,7 @@ String? _getManifestPath(Browser browser) {
   final manifestName =
       browser == Browser.firefox ? '$_hostName.moz.json' : '$_hostName.json';
   if (Platform.isWindows) {
-    return _joinExePath(manifestName);
+    return Util.homePathJoin(manifestName);
   }
 
   final home =
@@ -282,7 +259,7 @@ Future<bool> _checkWindowsRegistry(String keyPath) async {
 }
 
 Future<String> _getManifestContent(Browser browser) async {
-  final hostPath = _joinExePath(_hostExecName);
+  final hostPath = Util.homePathJoin(_hostExecName);
   final manifest = {
     'name': _hostName,
     'description': 'Gopeed browser extension host',
@@ -308,10 +285,4 @@ String _getWindowsRegistryKey(Browser browser) {
     case Browser.firefox:
       return _firefoxNativeHostsKey;
   }
-}
-
-String _joinExePath(String fileName) {
-  final execPath = Platform.resolvedExecutable;
-  final execDir = path.dirname(execPath);
-  return path.join(execDir, fileName);
 }
